@@ -19,3 +19,53 @@
 #title{
 	text-align: center;
 }
+
+#systemUI{
+	margin-top: 7em;
+}
+
+.requestButton{
+	background-color: black;
+	display: inline-flex;
+    padding: 8px;
+    border-radius: 50px;
+    text-align: center;
+    margin: 2px;
+    color: white;
+    cursor:pointer;
+}
+
+.setDestinationButton{
+    background-color: black;
+    padding: 8px;
+    border-radius: 100%;
+    text-align: center;
+    margin: 2px;
+    color: white;
+    font-weight: bold;
+    width: 50px;
+    height: 50px;
+     cursor:pointer;
+     position: relative;
+     left: 0.8em;
+}
+
+.requestButton > span{
+	color: white;
+}
+
+.setDestinationButton > span{
+	position: relative;
+	top: 7px;
+}
+
+.mainFloor{
+	position: relative;
+	left: 2.7em;
+}
+
+.bus{
+	font-size: 2em;
+	position: relative;
+	left: 0.8em;
+}

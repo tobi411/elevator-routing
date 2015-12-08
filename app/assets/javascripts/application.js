@@ -14,3 +14,10 @@
 //= require jquery_ujs
 //= require turbolinks
 //= require_tree .
+
+$(document).ready(function(){
+        $("[id*='request']").click(function(e) {
+        	var buttonId = $(this).attr('id');
+            console.log('button '+ buttonId +' clicked!');
+        });
+});
