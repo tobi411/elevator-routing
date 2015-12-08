@@ -24,20 +24,55 @@ $(document).ready(function(){
 			this.currentLocation = 1;
 			this.defaultLocation = 1; //not sure too
 			this.isTransporting = false;
-			this.position = position; //not sure yet
+			this.position = position;
+			this.isAcceptingRequests = false;
 			this.queue = [];
 			this.move = function(destination){
-				console.log("moving to "+ destination);
+				console.log("moving from "+ this.currentLocation +" to "+ destination);
+				// this.destination = destination;
+				// this.currentLocation = destination; //REMOVE THIS!!!!
 				this.destination = destination;
-				this.currentLocation = destination; //REMOVE THIS!!!!
-			}
+				while(this.currentLocation != this.destination)
+				{
+					if(this.destination > this.currentLocation)
+					{
+						$('#bus-floor-'+ this.currentLocation +'-elevator-'+this.position).children()
+						.fadeIn('slow',function(){
+							$(this).addClass("hidden");
+						});
+						this.currentLocation++;
+						$('#bus-floor-'+ this.currentLocation +'-elevator-'+this.position).children().removeClass("hidden");
+						// $('#bus-floor-'+ this.currentLocation +'-elevator-'+this.position).children().addClass("show selectedElevator");
+					}else{
+						this.currentLocation--;
+					}
+				}
+				this.isAcceptingRequests = true;
+				this.currentLocation = this.destination;
+				$('#bus-floor-'+ this.currentLocation +'-elevator-'+ this.position).children().addClass("selectedElevator");
+				console.log(this.currentLocation + " is set");
+			};
+			this.processQueue = function(){
+				var handleRequest = this.queue.shift();
+				this.move(handleRequest.destination);
+				console.log("processing "+ this.position);
+				if(this.queue.length > 0)
+					this.processQueue();
+			};
 		}
 
-		function Request(callFrom,direction)
+		function MainQueueRequest(callFrom,direction)
 		{
-			this.callFrom = callFrom;
+			this.destination = callFrom;
 			this.direction = direction;
 		}
+
+		function ElevatorQueRequest(callFrom, destination){
+			this.callFrom = callFrom;
+			this.destination = destination;
+		}
+
+
 
 		//a queue of requests
 		var queue = [];
@@ -46,9 +81,9 @@ $(document).ready(function(){
 		var elevator2 = new Elevator(2);
 		var elevator3 = new Elevator(3);
 
-		elevator1.move(1);
-		elevator2.move(2);
-		elevator3.move(3);
+		// elevator1.move(1);
+		// elevator2.move(2);
+		// elevator3.move(3);
 
 		var allElevators = [elevator1, elevator2, elevator3];
 
@@ -57,32 +92,36 @@ $(document).ready(function(){
         	$(this).children().addClass("buttonClicked");
         	var data = buttonId.split("-");
 
-        	if (!requestInArray(queue,data[2],data[1])) {
-	        	var request = new Request(data[2],data[1]);
+        	if (!requestInMainQueue(data[2],data[1])) {
+	        	var request = new MainQueueRequest(data[2],data[1]);
 	            console.log('button '+ buttonId +' clicked!');
 	            queue.push(request);
 	            console.log(queue);
 	            dispatchElevator();
+	            console.log(queue);
         	};
         });
 
         var dispatchElevator = function(){
         	console.log("here");
-        	var dispathedElevator = getAppropriateElevator();
+        	var dispatchedElevator = getAppropriateElevator();
+        	console.log(dispatchedElevator);
+        	dispatchedElevator.processQueue();
         };
 
         function getAppropriateElevator(){
         	var currRequest = queue.shift();
         	var elevatorToDispatch = null;
         	elevatorToDispatch = anyElevatorOnCurrFloor(currRequest);
-        	console.log(elevatorToDispatch);
         	if(elevatorToDispatch !== null)
         	{
-        		allElevators[elevatorToDispatch.position - 1].queue.push(currRequest);
+        		// allElevators[elevatorToDispatch.position - 1].queue.push(currRequest);
+        		elevatorToDispatch.queue.push(currRequest);
         	}else{
         		// elevatorToDispatch.
+        		console.log("nothing")
         	}
-
+        	return elevatorToDispatch;
         	// while(i < allElevators.length && !found){
         	// 	var currElevator = allElevators[i];
 
@@ -106,7 +145,7 @@ $(document).ready(function(){
         		var currElevator = allElevators[i];
 
         		//check if there is an elevator on this location or one going to this location
-        		if(currElevator.currentLocation == currRequest.callFrom || currElevator.destination == currRequest.callFrom){
+        		if(currElevator.currentLocation == currRequest.destination){
         			returnedElevator = currElevator;
         			found = true;
         		}
@@ -117,21 +156,49 @@ $(document).ready(function(){
 
          $("[id*='elevator']").click(function(e) {
         	var buttonId = $(this).attr('id');
-        	$(this).children().toggleClass("buttonClicked");
-            console.log('button '+ buttonId +' clicked!');
+        	var data = buttonId.split("-");
+        	if (allElevators[data[1]-1].isAcceptingRequests) {
+        		if (!requestInElevatorQueue(data[1]-1,data[3])) {
+		        	var request = new ElevatorQueRequest(data[1],data[3]);
+	        		$(this).children().addClass("buttonClicked");
+		            console.log('button '+ buttonId +' clicked!');
+		            allElevators[data[1]-1].queue.push(request);
+		            console.log(allElevators[data[1]-1].queue);
+		   //          // dispatchElevator();
+		   //          console.log(queue);
+		            setTimeout(function(){
+						    allElevators[data[1]-1].processQueue();
+					}, 2500);
+        		};
+        	};
+        	
         });
 
-         var requestInArray = function(request, callFrom, direction){
+         var requestInMainQueue = function(callFrom, direction){
          	var inArray = false;
          	var index = 0;
          	while(!inArray && index < queue.length)
          	{
-         		if(queue[index].callFrom === callFrom && queue[index].direction === direction)
+         		if(queue[index].destination === callFrom && queue[index].direction === direction)
          		{
          			inArray = true;
          		}
          		index++;
          	}
          	return inArray;
+         };
+
+         var requestInElevatorQueue = function(elevatorNumber, destination){
+         	var currElevator = allElevators[elevatorNumber];
+         	var i = 0;
+         	var found = false;
+         	while(i < currElevator.queue.length && !found){
+         		if(currElevator.queue[i].destination == destination){
+         			found = true
+         		}
+         		i++;
+         	}
+         	console.log(found);
+         	return found;
          };
 });
