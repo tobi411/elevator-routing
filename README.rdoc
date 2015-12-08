@@ -4,5 +4,5 @@ Please follow the steps below to run the site locally. Navigate to your project 
 
 * bundle install
 * bundle exec rails server
-* Navigate to http://localhost:3000/
-* Follow the guide
+
+Navigate to http://localhost:3000/ and follow the guide
