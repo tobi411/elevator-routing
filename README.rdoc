@@ -1,0 +1,10 @@
+== Elevator Routing System
+
+Please follow the steps below to run the site locally. Navigate to your project file and run:
+
+* bundle install
+
+* rails server
+
+Please feel free to use a different markup language if you do not plan to run
+<tt>rake doc:app</tt>.
