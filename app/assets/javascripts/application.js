@@ -22,42 +22,44 @@ $(document).ready(function(){
 		{
 			this.destination = 0;
 			this.currentLocation = 1;
-			this.defaultLocation = 1; //not sure too
 			this.isTransporting = false;
 			this.position = position;
 			this.isAcceptingRequests = false;
 			this.queue = [];
-			this.move = function(destination){
-				console.log("moving from "+ this.currentLocation +" to "+ destination);
-				// this.destination = destination;
-				// this.currentLocation = destination; //REMOVE THIS!!!!
-				this.destination = destination;
-				while(this.currentLocation != this.destination)
+
+			this.transport = function(){
+				while(this.destination != this.currentLocation)
 				{
+						$('#bus-floor-'+ this.currentLocation +'-elevator-'+this.position).children().addClass("hidden");
+						$('#request-up-'+this.position).children().removeClass('buttonClicked');
 					if(this.destination > this.currentLocation)
-					{
-						$('#bus-floor-'+ this.currentLocation +'-elevator-'+this.position).children()
-						.fadeIn('slow',function(){
-							$(this).addClass("hidden");
-						});
 						this.currentLocation++;
-						$('#bus-floor-'+ this.currentLocation +'-elevator-'+this.position).children().removeClass("hidden");
-						// $('#bus-floor-'+ this.currentLocation +'-elevator-'+this.position).children().addClass("show selectedElevator");
-					}else{
+					else
 						this.currentLocation--;
-					}
+					$('#bus-floor-'+ this.currentLocation +'-elevator-'+this.position).children().removeClass("hidden");
+						$('#bus-floor-'+ this.currentLocation +'-elevator-'+this.position).children().addClass("selectedElevator");
 				}
-				this.isAcceptingRequests = true;
-				this.currentLocation = this.destination;
-				$('#bus-floor-'+ this.currentLocation +'-elevator-'+ this.position).children().addClass("selectedElevator");
-				console.log(this.currentLocation + " is set");
-			};
+			}
+
+			//Each elevator has its own individual queue
 			this.processQueue = function(){
 				var handleRequest = this.queue.shift();
-				this.move(handleRequest.destination);
-				console.log("processing "+ this.position);
+				console.log(handleRequest);
+				this.destination = handleRequest.destination;
+
+				if (this.destination != this.currentLocation) { 
+					this.transport();
+				}
+				
+				this.isAcceptingRequests = true;
+				this.currentLocation = this.destination;
+				//on getting to final destination, remove indicator
+				$('#elevator-'+ this.position +'-destination-'+this.destination).children().removeClass('buttonClicked');				
+				$('#bus-floor-'+ this.currentLocation +'-elevator-'+ this.position).children().addClass("selectedElevator");
+				$('#request-'+handleRequest.direction+'-'+handleRequest.destination).children().removeClass('buttonClicked');
 				if(this.queue.length > 0)
 					this.processQueue();
+			
 			};
 		}
 
@@ -72,18 +74,12 @@ $(document).ready(function(){
 			this.destination = destination;
 		}
 
-
-
-		//a queue of requests
-		var queue = [];
+		//Main Queue for all Elevators
+		var QUEUE = [];
 
 		var elevator1 = new Elevator(1);
 		var elevator2 = new Elevator(2);
 		var elevator3 = new Elevator(3);
-
-		// elevator1.move(1);
-		// elevator2.move(2);
-		// elevator3.move(3);
 
 		var allElevators = [elevator1, elevator2, elevator3];
 
@@ -94,63 +90,58 @@ $(document).ready(function(){
 
         	if (!requestInMainQueue(data[2],data[1])) {
 	        	var request = new MainQueueRequest(data[2],data[1]);
-	            console.log('button '+ buttonId +' clicked!');
-	            queue.push(request);
-	            console.log(queue);
+	            QUEUE.push(request);
 	            dispatchElevator();
-	            console.log(queue);
         	};
         });
 
         var dispatchElevator = function(){
-        	console.log("here");
         	var dispatchedElevator = getAppropriateElevator();
-        	console.log(dispatchedElevator);
         	dispatchedElevator.processQueue();
         };
 
         function getAppropriateElevator(){
-        	var currRequest = queue.shift();
+        	var currRequest = QUEUE.shift();
         	var elevatorToDispatch = null;
         	elevatorToDispatch = anyElevatorOnCurrFloor(currRequest);
-        	if(elevatorToDispatch !== null)
+        	if(elevatorToDispatch === null)
         	{
-        		// allElevators[elevatorToDispatch.position - 1].queue.push(currRequest);
-        		elevatorToDispatch.queue.push(currRequest);
-        	}else{
-        		// elevatorToDispatch.
-        		console.log("nothing")
+        		elevatorToDispatch = findClosestElevator(currRequest);
         	}
+        	elevatorToDispatch.queue.push(currRequest);
         	return elevatorToDispatch;
-        	// while(i < allElevators.length && !found){
-        	// 	var currElevator = allElevators[i];
-
-        	// 	//check if there is an elevator on this location or one going to this location
-        	// 	if(currElevator.currentLocation == currRequest.callFrom || currElevator.destination == currRequest.callFrom){
-        	// 		console.log("found elvator "+ (i+1));
-        	// 		return currElevator;
-        	// 	}
-        	// 	i++;
-        	// }
         }
 
-
+        //if there is an elevator on the floor of the request, use that elevator
         function anyElevatorOnCurrFloor(currRequest)
         {
-        	console.log(currRequest);
         	var i = 0;
         	var found = false;
         	var returnedElevator = null;
         	while(i < allElevators.length && !found){
         		var currElevator = allElevators[i];
 
-        		//check if there is an elevator on this location or one going to this location
-        		if(currElevator.currentLocation == currRequest.destination){
+        		//check if there is an elevator on this location
+        		if(currElevator.currentLocation === currRequest.destination){
         			returnedElevator = currElevator;
         			found = true;
         		}
         		i++;
         	}
+        	return returnedElevator;
+        }
+
+        function findClosestElevator(currRequest){
+        	console.log(currRequest);
+    		var returnedElevator = allElevators[0];
+        	for(var i = 1 ; i < allElevators.length; i++)
+        	{
+        		if((currRequest.destination - allElevators[i].currentLocation) > (currRequest.destination - returnedElevator.currentLocation))
+        		{
+        			returnedElevator = allElevators[i];
+        		}
+        	}
+        	console.log(returnedElevator);
         	return returnedElevator;
         }
 
@@ -161,14 +152,10 @@ $(document).ready(function(){
         		if (!requestInElevatorQueue(data[1]-1,data[3])) {
 		        	var request = new ElevatorQueRequest(data[1],data[3]);
 	        		$(this).children().addClass("buttonClicked");
-		            console.log('button '+ buttonId +' clicked!');
 		            allElevators[data[1]-1].queue.push(request);
-		            console.log(allElevators[data[1]-1].queue);
-		   //          // dispatchElevator();
-		   //          console.log(queue);
 		            setTimeout(function(){
 						    allElevators[data[1]-1].processQueue();
-					}, 2500);
+					}, 1000);
         		};
         	};
         	
@@ -177,9 +164,9 @@ $(document).ready(function(){
          var requestInMainQueue = function(callFrom, direction){
          	var inArray = false;
          	var index = 0;
-         	while(!inArray && index < queue.length)
+         	while(!inArray && index < QUEUE.length)
          	{
-         		if(queue[index].destination === callFrom && queue[index].direction === direction)
+         		if(QUEUE[index].destination === callFrom && QUEUE[index].direction === direction)
          		{
          			inArray = true;
          		}
@@ -198,7 +185,6 @@ $(document).ready(function(){
          		}
          		i++;
          	}
-         	console.log(found);
          	return found;
          };
 });
