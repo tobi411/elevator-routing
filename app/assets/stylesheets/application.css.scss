@@ -50,10 +50,6 @@
      left: 0.8em;
 }
 
-.requestButton > span{
-	color: white;
-}
-
 .setDestinationButton > span{
 	position: relative;
 	top: 7px;
@@ -68,4 +64,16 @@
 	font-size: 2em;
 	position: relative;
 	left: 0.8em;
+}
+
+.buttonClicked{
+	color: greenyellow; 
+}
+
+.hidden{
+	display: none;
+}
+
+.show{
+	display: block;
 }
